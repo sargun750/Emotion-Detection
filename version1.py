@@ -14,10 +14,7 @@ ALERT_EMOTIONS = {'Angry', 'Disgust', 'Fear', 'Sad'}
 NEUTRAL_IDX = emotions.index('Neutral')
 NEUTRAL_THRESHOLD = 0.30
 ALERT_CONF_THRESHOLD = 0.60
-ALERT_STREAK_N = 2 
 HOLD_SECONDS = 0.3
-
-speed = int(input("Enter the speed (from 3 to 10): "))
 
 face_cascade = cv2.CascadeClassifier(
     cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
@@ -26,7 +23,6 @@ face_cascade = cv2.CascadeClassifier(
 cap = cv2.VideoCapture(0)
 frame_count = 0
 face_labels = {}
-face_streaks = {} 
 alert_until = 0.0
 high_alert_until = 0.0
 
@@ -40,7 +36,7 @@ while True:
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     faces = face_cascade.detectMultiScale(gray, 1.3, 5)
 
-    run_model = (frame_count % speed == 0)
+    run_model = (frame_count % 5 == 0)
     alert_count = 0
 
     for i, (x, y, w, h) in enumerate(faces):
@@ -60,14 +56,7 @@ while True:
             emotion = emotions[idx]
             conf = preds[idx].item()
 
-            raw_alert = (emotion in ALERT_EMOTIONS and conf > ALERT_CONF_THRESHOLD) or (emotion == 'Neutral' and conf < NEUTRAL_THRESHOLD)
-
-            if raw_alert:
-                face_streaks[i] = face_streaks.get(i, 0) + 1
-            else:
-                face_streaks[i] = 0
-
-            is_alert = face_streaks[i] >= ALERT_STREAK_N
+            is_alert = (emotion in ALERT_EMOTIONS and conf > ALERT_CONF_THRESHOLD) or (emotion == 'Neutral' and conf < NEUTRAL_THRESHOLD)
             face_labels[i] = (f"{emotion} ({conf:.2f})", is_alert)
 
         label, is_alert = face_labels.get(i, ("", False))
@@ -79,7 +68,6 @@ while True:
 
     if run_model:
         face_labels = {k: v for k, v in face_labels.items() if k < len(faces)}
-        face_streaks = {k: v for k, v in face_streaks.items() if k < len(faces)}
 
     if run_model:
         if alert_count >= 1:
